@@ -1,30 +1,721 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tecnoplanta - Reserva da Sala</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <style>
-    html, body {
+    :root {
+      --verde: #39764a;
+      --verde-claro: #e8f3e9;
+      --vermelho: #a33d3d;
+      --vermelho-claro: #f9e8e8;
+      --fundo: #f5f7f5;
+      --texto: #243128;
+      --borda: #dfe6df;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
       margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
+      background: var(--fundo);
+      color: var(--texto);
       font-family: Arial, sans-serif;
     }
-    iframe {
-      display: block;
+
+    header {
+      background: var(--verde);
+      color: white;
+      padding: 25px 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0 0 7px;
+      font-size: 25px;
+    }
+
+    header p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    main {
+      width: min(1100px, 94%);
+      margin: 24px auto 40px;
+    }
+
+    .panel {
+      background: white;
+      padding: 22px;
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px #00000008;
+    }
+
+    h2 {
+      font-size: 19px;
+      margin: 0 0 18px;
+    }
+
+    .date-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    input, select {
       width: 100%;
-      height: 100%;
-      min-height: 100vh;
-      border: none;
+      padding: 11px;
+      border: 1px solid #cbd5cb;
+      border-radius: 7px;
+      background: white;
+      color: var(--texto);
+      font-size: 14px;
+    }
+
+    button {
+      padding: 12px 18px;
+      border: 0;
+      border-radius: 7px;
+      background: var(--verde);
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover { filter: brightness(.94); }
+
+    button:disabled {
+      opacity: .55;
+      cursor: wait;
+    }
+
+    .legenda {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-bottom: 18px;
+      font-size: 13px;
+    }
+
+    .legenda span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .bolinha {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .livre-bolinha { background: var(--verde); }
+    .reservado-bolinha { background: var(--vermelho); }
+
+    .agenda {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .slot {
+      text-align: left;
+      min-height: 83px;
+      padding: 12px;
+      border: 1px solid var(--borda);
+      border-radius: 9px;
+      background: white;
+      color: var(--texto);
+      cursor: pointer;
+    }
+
+    .slot .horario {
+      display: block;
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .slot .status {
+      display: block;
+      font-size: 12px;
+      font-weight: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .slot.livre {
+      border-color: #b7d7bb;
+      background: var(--verde-claro);
+    }
+
+    .slot.livre .status { color: var(--verde); }
+
+    .slot.reservado {
+      border-color: #ecc7c7;
+      background: var(--vermelho-claro);
+      cursor: not-allowed;
+    }
+
+    .slot.reservado .status { color: var(--vermelho); }
+
+    .slot.selecionado {
+      outline: 3px solid var(--verde);
+      outline-offset: 1px;
+    }
+
+    .slot:disabled { opacity: 1; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .form-grid .full { grid-column: 1 / -1; }
+
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    #mensagem {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .sucesso { color: var(--verde); }
+    .erro { color: var(--vermelho); }
+
+    .ajuda {
+      color: #657168;
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+
+    .vazio {
+      grid-column: 1 / -1;
+      padding: 20px;
+      text-align: center;
+      border: 1px dashed var(--borda);
+      border-radius: 9px;
+      color: #657168;
+    }
+
+    @media (max-width: 700px) {
+      .agenda { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid .full { grid-column: auto; }
+      .panel { padding: 16px; }
+      header h1 { font-size: 21px; }
+    }
+
+    @media (max-width: 420px) {
+      .agenda { grid-template-columns: 1fr; }
     }
   </style>
 </head>
+
 <body>
-  <iframe
-    src="https://script.google.com/macros/s/AKfycbyUidOT8c1R5aN8eZvo4TiibkHDlx4VsdArL81htB9_FncHSbvdkdeZMtu_4lTUD8ZK/exec"
-    title="Reserva da sala de reuniões da Tecnoplanta">
-  </iframe>
+  <header>
+    <h1>Tecnoplanta</h1>
+    <p>Reserva da Sala de Reuniões</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Consultar disponibilidade</h2>
+
+      <div class="date-row">
+        <div class="field">
+          <label for="data">Escolher data</label>
+          <input type="date" id="data" required>
+        </div>
+
+        <button type="button" id="consultar">Consultar horários</button>
+      </div>
+
+      <p class="ajuda">
+        Horários disponíveis das 07h às 18h, em intervalos de 30 minutos.
+        Selecione um horário livre para definir o início da sua reserva.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Agenda do dia</h2>
+
+      <div class="legenda">
+        <span><i class="bolinha livre-bolinha"></i> Livre</span>
+        <span><i class="bolinha reservado-bolinha"></i> Reservado</span>
+      </div>
+
+      <div id="agenda" class="agenda">
+        <div class="vazio">Selecione uma data para consultar a agenda.</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Solicitar reserva</h2>
+
+      <form id="formReserva">
+        <div class="form-grid">
+          <div class="field full">
+            <label for="nome">Nome do solicitante</label>
+            <input id="nome" name="nome" type="text"
+              maxlength="150" autocomplete="name" required>
+          </div>
+
+          <div class="field full">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" type="email"
+              maxlength="200" autocomplete="email" required>
+          </div>
+
+          <div class="field">
+            <label for="inicio">Horário de início</label>
+            <select id="inicio" required></select>
+          </div>
+
+          <div class="field">
+            <label for="fim">Horário de término</label>
+            <select id="fim" required></select>
+          </div>
+        </div>
+
+        <p class="ajuda">
+          Após a confirmação, você receberá um e-mail com a data
+          e os horários da reserva.
+        </p>
+
+        <div class="form-actions">
+          <button type="submit" id="reservar">Reservar</button>
+          <span id="mensagem" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const dataInput = document.getElementById('data');
+    const agendaDiv = document.getElementById('agenda');
+    const inicioSelect = document.getElementById('inicio');
+    const fimSelect = document.getElementById('fim');
+    const mensagem = document.getElementById('mensagem');
+    const botaoConsultar = document.getElementById('consultar');
+    const botaoReservar = document.getElementById('reservar');
+
+    let eventosDoDia = [];
+    let carregando = false;
+
+    // Comunicação com a API da Vercel.
+    // O token permanece no servidor, nunca nesta página.
+    async function chamarAPI(payload) {
+      const resposta = await fetch('/api/reserva', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      let resultado;
+
+      try {
+        resultado = await resposta.json();
+      } catch (erro) {
+        throw new Error('A API retornou uma resposta inválida.');
+      }
+
+      if (!resposta.ok) {
+        throw new Error(
+          resultado.message || 'Não foi possível comunicar com a API.'
+        );
+      }
+
+      if (resultado && resultado.success === false) {
+        throw new Error(
+          resultado.message || 'A solicitação não foi concluída.'
+        );
+      }
+
+      return resultado;
+    }
+
+    function formatarDataLocal(date) {
+      const ano = date.getFullYear();
+      const mes = String(date.getMonth() + 1).padStart(2, '0');
+      const dia = String(date.getDate()).padStart(2, '0');
+      return ano + '-' + mes + '-' + dia;
+    }
+
+    function gerarHorarios() {
+      const lista = [];
+
+      for (let minutos = 7 * 60; minutos <= 18 * 60; minutos += 30) {
+        const hora = String(Math.floor(minutos / 60)).padStart(2, '0');
+        const minuto = String(minutos % 60).padStart(2, '0');
+        lista.push(hora + ':' + minuto);
+      }
+
+      return lista;
+    }
+
+    const horarios = gerarHorarios();
+
+    function minutosDoHorario(horario) {
+      const partes = horario.split(':').map(Number);
+      return partes[0] * 60 + partes[1];
+    }
+
+    function nomeDoSolicitante(titulo) {
+      const prefixo = 'Sala de Reuniões - ';
+
+      if (titulo && titulo.indexOf(prefixo) === 0) {
+        return titulo.slice(prefixo.length).trim() || 'Nome não informado';
+      }
+
+      return titulo || 'Reserva existente';
+    }
+
+    function eventoQueOcupa(inicio, fim) {
+      const inicioMin = minutosDoHorario(inicio);
+      const fimMin = minutosDoHorario(fim);
+
+      return eventosDoDia.find(function(evento) {
+        const eventoInicio = minutosDoHorario(evento.start);
+        const eventoFim = minutosDoHorario(evento.end);
+
+        return eventoInicio < fimMin && eventoFim > inicioMin;
+      });
+    }
+
+    function mostrarMensagem(texto, tipo) {
+      mensagem.textContent = texto || '';
+      mensagem.className = tipo || '';
+    }
+
+    function preencherSelects() {
+      inicioSelect.replaceChildren();
+      fimSelect.replaceChildren();
+
+      const opcaoInicio = document.createElement('option');
+      opcaoInicio.value = '';
+      opcaoInicio.textContent = 'Selecione';
+      inicioSelect.appendChild(opcaoInicio);
+
+      horarios.slice(0, -1).forEach(function(horario) {
+        const opcao = document.createElement('option');
+        opcao.value = horario;
+        opcao.textContent = horario;
+        inicioSelect.appendChild(opcao);
+      });
+
+      const opcaoFim = document.createElement('option');
+      opcaoFim.value = '';
+      opcaoFim.textContent = 'Selecione';
+      fimSelect.appendChild(opcaoFim);
+
+      horarios.slice(1).forEach(function(horario) {
+        const opcao = document.createElement('option');
+        opcao.value = horario;
+        opcao.textContent = horario;
+        fimSelect.appendChild(opcao);
+      });
+    }
+
+    function atualizarTerminos() {
+      const inicio = inicioSelect.value;
+      const terminoAnterior = fimSelect.value;
+
+      Array.from(fimSelect.options).forEach(function(opcao) {
+        if (!opcao.value) return;
+
+        opcao.disabled = !inicio ||
+          minutosDoHorario(opcao.value) <= minutosDoHorario(inicio);
+      });
+
+      if (
+        inicio &&
+        (!terminoAnterior ||
+          minutosDoHorario(terminoAnterior) <= minutosDoHorario(inicio))
+      ) {
+        const proximo = horarios.find(function(horario) {
+          return minutosDoHorario(horario) > minutosDoHorario(inicio);
+        });
+
+        fimSelect.value = proximo || '';
+      } else if (!inicio) {
+        fimSelect.value = '';
+      }
+    }
+
+    function renderizarAgenda() {
+      agendaDiv.replaceChildren();
+
+      const agora = new Date();
+      const hoje = formatarDataLocal(agora);
+      const dataSelecionada = dataInput.value;
+
+      for (let i = 0; i < horarios.length - 1; i++) {
+        const inicio = horarios[i];
+        const fim = horarios[i + 1];
+        const evento = eventoQueOcupa(inicio, fim);
+        const slotInicio = minutosDoHorario(inicio);
+
+        const jaPassou = dataSelecionada < hoje ||
+          (dataSelecionada === hoje &&
+            slotInicio <= agora.getHours() * 60 + agora.getMinutes());
+
+        const botao = document.createElement('button');
+        botao.type = 'button';
+        botao.className = 'slot ' + (evento ? 'reservado' : 'livre');
+
+        const horario = document.createElement('span');
+        horario.className = 'horario';
+        horario.textContent = inicio + ' – ' + fim;
+
+        const status = document.createElement('span');
+        status.className = 'status';
+
+        if (evento) {
+          status.textContent = 'Reservado: ' +
+            nomeDoSolicitante(evento.title);
+          botao.title = status.textContent;
+          botao.disabled = true;
+        } else if (jaPassou) {
+          status.textContent = 'Livre — horário passado';
+          botao.disabled = true;
+        } else {
+          status.textContent = 'Livre';
+
+          botao.addEventListener('click', function() {
+            inicioSelect.value = inicio;
+            atualizarTerminos();
+            fimSelect.focus();
+
+            document.querySelectorAll('.slot.selecionado')
+              .forEach(function(item) {
+                item.classList.remove('selecionado');
+              });
+
+            botao.classList.add('selecionado');
+
+            mostrarMensagem(
+              'Início selecionado: ' + inicio +
+              '. Escolha o horário de término.',
+              ''
+            );
+
+            document.getElementById('formReserva').scrollIntoView({
+              behavior: 'smooth',
+              block: 'center'
+            });
+          });
+        }
+
+        botao.appendChild(horario);
+        botao.appendChild(status);
+        agendaDiv.appendChild(botao);
+      }
+    }
+
+    async function consultarDisponibilidade() {
+      if (!dataInput.value) {
+        mostrarMensagem('Selecione uma data.', 'erro');
+        return;
+      }
+
+      if (carregando) return;
+
+      carregando = true;
+      botaoConsultar.disabled = true;
+      agendaDiv.replaceChildren();
+
+      const aviso = document.createElement('div');
+      aviso.className = 'vazio';
+      aviso.textContent = 'Consultando agenda...';
+      agendaDiv.appendChild(aviso);
+      mostrarMensagem('', '');
+
+      try {
+        const resultado = await chamarAPI({
+          action: 'availability',
+          date: dataInput.value
+        });
+
+        // A API pode devolver diretamente a lista ou uma lista envelopada.
+        if (Array.isArray(resultado)) {
+          eventosDoDia = resultado;
+        } else if (resultado && Array.isArray(resultado.events)) {
+          eventosDoDia = resultado.events;
+        } else if (resultado && Array.isArray(resultado.eventos)) {
+          eventosDoDia = resultado.eventos;
+        } else if (resultado && Array.isArray(resultado.data)) {
+          eventosDoDia = resultado.data;
+        } else {
+          throw new Error(
+            'A resposta da disponibilidade veio em um formato inesperado.'
+          );
+        }
+
+        renderizarAgenda();
+      } catch (erro) {
+        eventosDoDia = [];
+        agendaDiv.replaceChildren();
+
+        const avisoErro = document.createElement('div');
+        avisoErro.className = 'vazio';
+        avisoErro.textContent = 'Não foi possível consultar a agenda.';
+        agendaDiv.appendChild(avisoErro);
+
+        mostrarMensagem(
+          erro.message || 'Ocorreu um erro ao consultar a agenda.',
+          'erro'
+        );
+      } finally {
+        carregando = false;
+        botaoConsultar.disabled = false;
+      }
+    }
+
+    dataInput.addEventListener('change', consultarDisponibilidade);
+    botaoConsultar.addEventListener('click', consultarDisponibilidade);
+
+    inicioSelect.addEventListener('change', function() {
+      atualizarTerminos();
+
+      document.querySelectorAll('.slot.selecionado')
+        .forEach(function(item) {
+          item.classList.remove('selecionado');
+        });
+    });
+
+    document.getElementById('formReserva')
+      .addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        if (carregando) return;
+
+        const dados = {
+          date: dataInput.value,
+          name: document.getElementById('nome').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          start: inicioSelect.value,
+          end: fimSelect.value
+        };
+
+        if (
+          !dados.date || !dados.name || !dados.email ||
+          !dados.start || !dados.end
+        ) {
+          mostrarMensagem('Preencha todos os campos.', 'erro');
+          return;
+        }
+
+        if (
+          minutosDoHorario(dados.end) <= minutosDoHorario(dados.start)
+        ) {
+          mostrarMensagem('O término deve ser depois do início.', 'erro');
+          return;
+        }
+
+        if (eventoQueOcupa(dados.start, dados.end)) {
+          mostrarMensagem(
+            'Esse período está ocupado. Escolha outro horário.',
+            'erro'
+          );
+          await consultarDisponibilidade();
+          return;
+        }
+
+        carregando = true;
+        botaoReservar.disabled = true;
+        botaoConsultar.disabled = true;
+        mostrarMensagem('Registrando reserva...', '');
+
+        let reservaConcluida = false;
+
+        try {
+          const resultado = await chamarAPI({
+            action: 'reserve',
+            data: dados
+          });
+
+          if (resultado.success !== true) {
+            throw new Error(
+              resultado.message || 'Não foi possível confirmar a reserva.'
+            );
+          }
+
+          reservaConcluida = true;
+
+          mostrarMensagem(
+            resultado.message || 'Reserva realizada com sucesso!',
+            resultado.emailEnviado === false ? 'erro' : 'sucesso'
+          );
+
+          inicioSelect.value = '';
+          fimSelect.value = '';
+          atualizarTerminos();
+        } catch (erro) {
+          mostrarMensagem(
+            erro.message || 'Não foi possível realizar a reserva.',
+            'erro'
+          );
+        } finally {
+          carregando = false;
+          botaoReservar.disabled = false;
+          botaoConsultar.disabled = false;
+        }
+
+        // Atualiza a agenda após concluir a tentativa.
+        // Se houve falha de comunicação, a atualização também pode ajudar
+        // a confirmar se a reserva chegou a ser registrada.
+        await consultarDisponibilidade();
+
+        if (reservaConcluida) {
+          // Preserva a mensagem de confirmação após atualizar a agenda.
+          // A mensagem já foi exibida acima; a consulta limpa mensagens.
+          // Por isso, exibimos novamente uma confirmação simples.
+          mostrarMensagem(
+            'Reserva registrada. Confira a agenda atualizada.',
+            'sucesso'
+          );
+        }
+      });
+
+    preencherSelects();
+    atualizarTerminos();
+
+    const hoje = formatarDataLocal(new Date());
+    dataInput.value = hoje;
+    dataInput.min = hoje;
+
+    consultarDisponibilidade();
+  </script>
 </body>
 </html>
